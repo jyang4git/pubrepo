@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2026 Federal &amp; CA Tax &amp; IRMAA Calculator</title>
+  <style>
+    :root {
+      --bg: #f4f5f7;
+      --card: #fff;
+      --accent: #4CAF50;
+      --border: #d8dce0;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      background: var(--bg);
+      color: #1a1a1a;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .wrap {
+      max-width: 900px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 760px) {
+      .wrap {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 20px 24px;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, .08);
+    }
+
+    h1 {
+      font-size: 18px;
+      margin: 0 0 4px;
+    }
+
+    .status {
+      font-size: 12px;
+      font-weight: bold;
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      margin: 12px 0 4px;
+    }
+
+    input[type=number] {
+      width: 100%;
+      padding: 8px 10px;
+      font-size: 14px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+    }
+
+    .radio-row,
+    .check-row {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      margin-top: 6px;
+      font-size: 14px;
+    }
+
+    .radio-row label,
+    .check-row label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 500;
+      margin: 0;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 20px;
+      padding: 14px;
+      font-size: 15px;
+      font-weight: 700;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      filter: brightness(.95);
+    }
+
+    pre {
+      font-family: "SFMono-Regular", Menlo, Consolas, monospace;
+      font-size: 13px;
+      background: #f0f0f0;
+      padding: 16px;
+      border-radius: 8px;
+      white-space: pre-wrap;
+      margin: 0;
+      min-height: 200px;
+    }
+
+    .warn {
+      background: #fff4e5;
+      border-left: 4px solid #ff9800;
+      padding: 10px 12px;
+      margin-top: 12px;
+      font-size: 13px;
+      border-radius: 4px;
+      white-space: pre-wrap;
+    }
+
+    .warn-red {
+      background: #fee2e2;
+      border-left: 4px solid #ef4444;
+      color: #991b1b;
+      padding: 10px 12px;
+      margin-top: 12px;
+      font-size: 13px;
+      border-radius: 4px;
+      white-space: pre-wrap;
+    }
+
+    .note {
+      font-size: 11px;
+      color: #888;
+      font-style: italic;
+      margin-top: 14px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Federal &amp; CA Tax &amp; IRMAA Calculator</h1>
+      <div class="status" id="status" style="color:#888;">… Fetching live data</div>
+
+      <label>Retirement Withdrawal (1099-R):</label>
+      <input type="number" id="withdrawal" value="0" step="any">
+
+      <label>Required Minimum Distribution (RMD):</label>
+      <input type="number" id="rmd" value="0" step="any">
+
+      <label>Annual Social Security Benefits:</label>
+      <input type="number" id="ss" value="0" step="any">
+
+      <label>Taxable Interest Income:</label>
+      <input type="number" id="interest" value="0" step="any">
+
+      <label>CA Tax Refund:</label>
+      <input type="number" id="ca_refund" value="0" step="any">
+
+      <label>Capital Loss:</label>
+      <input type="number" id="capital_loss" value="0" step="any">
+
+      <label>Itemized Deductions:</label>
+      <input type="number" id="itemized" value="0" step="any">
+
+      <label>Filing Status:</label>
+      <div class="radio-row">
+        <label><input type="radio" name="filing" value="single" checked> Single</label>
+        <label><input type="radio" name="filing" value="mfj"> Married Filing Jointly</label>
+      </div>
+
+      <label>Age / Seniors Deduction:</label>
+      <div class="check-row">
+        <label><input type="checkbox" id="is_65" checked> Is anyone 65 or older?</label>
+      </div>
+      <div class="check-row" id="senior_count_row">
+        <label>How many 65+?
+          <input type="number" id="senior_count" value="1" min="1" max="2" style="width:60px;">
+        </label>
+      </div>
+
+      <button id="calc">Calculate Tax</button>
+      <div class="note">* Calculations based on 2026 tax rules.</div>
+    </div>
+
+    <div class="card">
+      <h1>Results</h1>
+      <pre id="results">Results will appear here.</pre>
+      <div id="warnings"></div>
+    </div>
+  </div>
+
+  <script>
+    const INF = Infinity;
+
+    // Live data sources (mirrors the Python script's URLs)
+    const YEAR = 2026;
+    const TAX_BRACKET_URL = `https://raw.githubusercontent.com/multifol-io/financial-variables/main/data/usa/irs/irs.tax-rates.${YEAR}.json`;
+    const RETIREMENT_DATA_URL = `https://raw.githubusercontent.com/multifol-io/financial-variables/main/data/usa/irs/irs.retirement.${YEAR}.json`;
+    const CA_TAX_DATA_URL = "https://termbin.com/8kmx";
+
+    // 2026 fallback defaults (mirrors the Python script's hardcoded data)
+    let BASE_PART_B = 202.90;
+    const DATA = {
+      federal_brackets: {
+        single: [[12400, 0.10], [50400, 0.12], [105700, 0.22], [201775, 0.24], [256225, 0.32], [640600, 0.35], [INF, 0.37]],
+        mfj: [[24800, 0.10], [100800, 0.12], [211400, 0.22], [403550, 0.24], [512450, 0.32], [768700, 0.35], [INF, 0.37]]
+      },
+      ss_thresholds: {
+        single: { base1: 25000, base2: 34000 },
+        mfj: { base1: 32000, base2: 44000 }
+      },
+      irmaa_thresholds: {
+        single: [[109000, 0.00, 0.00], [137000, 81.20, 14.50], [171000, 202.90, 37.50], [205000, 324.60, 60.40], [499999, 446.30, 83.40], [INF, 487.00, 91.00]],
+        mfj: [[218000, 0.00, 0.00], [274000, 81.20, 14.50], [342000, 202.90, 37.50], [410000, 324.60, 60.40], [749999, 446.30, 83.40], [INF, 487.00, 91.00]]
+      },
+      standard_deduction: {
+        single: { base: 16100, senior: 2050 },
+        mfj: { base: 32200, senior: 1650 }
+      },
+      ca_brackets: {
+        single: [[11079, 0.01], [26264, 0.02], [41452, 0.04], [57542, 0.06], [72724, 0.08], [371479, 0.093], [445771, 0.103], [742953, 0.113], [INF, 0.123]],
+        mfj: [[22158, 0.01], [52528, 0.02], [82904, 0.04], [115084, 0.06], [145448, 0.08], [742958, 0.093], [891542, 0.103], [1485906, 0.113], [INF, 0.123]]
+      },
+      ca_standard_deduction: { single: 5706, mfj: 11412 },
+      ca_exemption_credits: { single: 155, mfj: 310, senior: 155 }
+    };
+
+    // --- Live data fetching (mirrors TaxDataManager.fetch_live_data) ---
+    let isLive = false;
+
+    async function fetchUrl(url, parser) {
+      try {
+        const resp = await fetch(url, { headers: { 'Accept': 'application/json' } });
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        const remote = await resp.json();
+        parser(remote);
+        isLive = true;
+        console.log('Successfully loaded live data from: ' + url);
+      } catch (e) {
+        console.log('Could not load data from ' + url + ': ' + e + '. Using hardcoded fallbacks.');
+      }
+    }
+
+    function parseTaxRates(data) {
+      // Legacy format: { tax_rates: { single:[{rate,bracket_start}], married_filing_jointly:[...] } }
+      if (data.tax_rates) {
+        const rates = data.tax_rates;
+        const mapping = { single: 'single', married_filing_jointly: 'mfj' };
+        for (const [remoteKey, localKey] of Object.entries(mapping)) {
+          if (!rates[remoteKey]) continue;
+          const raw = rates[remoteKey];
+          const brackets = [];
+          for (let i = 0; i < raw.length; i++) {
+            const threshold = (i + 1 < raw.length) ? raw[i + 1].bracket_start : INF;
+            brackets.push([threshold, raw[i].rate]);
+          }
+          DATA.federal_brackets[localKey] = brackets;
+        }
+        return;
+      }
+
+      // Current format: { TaxData: { TaxFilers: [{ TaxFilingStatus, StandardDeduction, TaxBrackets:[{Rate,StartAmount}] }] } }
+      if (data.TaxData && Array.isArray(data.TaxData.TaxFilers)) {
+        const mapping = { Single: 'single', MarriedFilingJointly: 'mfj' };
+        for (const filer of data.TaxData.TaxFilers) {
+          const localKey = mapping[filer.TaxFilingStatus];
+          if (!localKey) continue;
+          const raw = (filer.TaxBrackets || []).slice().sort((a, b) => a.StartAmount - b.StartAmount);
+          const brackets = [];
+          for (let i = 0; i < raw.length; i++) {
+            const rate = parseFloat(String(raw[i].Rate).replace('%', '')) / 100;
+            const threshold = (i + 1 < raw.length) ? raw[i + 1].StartAmount : INF;
+            brackets.push([threshold, rate]);
+          }
+          if (brackets.length) DATA.federal_brackets[localKey] = brackets;
+          if (filer.StandardDeduction != null) DATA.standard_deduction[localKey].base = filer.StandardDeduction;
+        }
+      }
+    }
+
+    function parseRetirementData(data) {
+      if (data.medicare && data.medicare.standard_premium_part_b != null) {
+        BASE_PART_B = data.medicare.standard_premium_part_b;
+      }
+    }
+
+    function parseCaData(data) {
+      if (data.ca_standard_deduction) {
+        for (const fs of ['single', 'mfj']) {
+          if (data.ca_standard_deduction[fs] != null) DATA.ca_standard_deduction[fs] = data.ca_standard_deduction[fs];
+        }
+      }
+      if (data.ca_exemption_credits) {
+        for (const ct of ['single', 'mfj', 'senior']) {
+          if (data.ca_exemption_credits[ct] != null) DATA.ca_exemption_credits[ct] = data.ca_exemption_credits[ct];
+        }
+      }
+      if (data.ca_brackets) {
+        for (const fs of ['single', 'mfj']) {
+          if (!data.ca_brackets[fs]) continue;
+          const raw = data.ca_brackets[fs];
+          const brackets = [];
+          for (let i = 0; i < raw.length; i++) {
+            const rate = raw[i].rate;
+            const threshold = (i + 1 < raw.length) ? raw[i + 1].bracket_start : INF;
+            brackets.push([threshold, rate]);
+          }
+          DATA.ca_brackets[fs] = brackets;
+        }
+      }
+    }
+
+    async function fetchLiveData() {
+      await Promise.all([
+        fetchUrl(TAX_BRACKET_URL, parseTaxRates),
+        fetchUrl(RETIREMENT_DATA_URL, parseRetirementData),
+        fetchUrl(CA_TAX_DATA_URL, parseCaData)
+      ]);
+      const el = document.getElementById('status');
+      if (isLive) { el.textContent = '● Live Data Connected'; el.style.color = 'green'; }
+      else { el.textContent = '○ Using Offline Defaults (2026 projections)'; el.style.color = '#e08600'; }
+    }
+
+    function calcTaxableSS(ssBenefits, provisionalIncome, filing) {
+      const t = DATA.ss_thresholds[filing];
+      const max50 = 0.5 * (t.base2 - t.base1);
+      if (provisionalIncome <= t.base1) return 0;
+      if (provisionalIncome <= t.base2) return Math.min(0.5 * (provisionalIncome - t.base1), 0.5 * ssBenefits);
+      return Math.min(0.85 * (provisionalIncome - t.base2) + max50, 0.85 * ssBenefits);
+    }
+
+    function calcBracketTax(taxableIncome, brackets) {
+      let tax = 0, prev = 0;
+      for (const [threshold, rate] of brackets) {
+        if (taxableIncome > threshold) { tax += (threshold - prev) * rate; prev = threshold; }
+        else { tax += (taxableIncome - prev) * rate; break; }
+      }
+      return tax;
+    }
+
+    function calcFederalTax(taxableIncome, filing) {
+      return calcBracketTax(taxableIncome, DATA.federal_brackets[filing]);
+    }
+
+    function calcCaTax(taxableIncome, filing, num65) {
+      let tax = calcBracketTax(taxableIncome, DATA.ca_brackets[filing]);
+      if (taxableIncome > 1000000) tax += (taxableIncome - 1000000) * 0.01; // Mental Health Services Tax
+      const c = DATA.ca_exemption_credits;
+      const totalCredits = c[filing] + c.senior * num65;
+      return Math.max(0, tax - totalCredits);
+    }
+
+    function calcIrmaa(magi, filing) {
+      for (const [threshold, bS, dS] of DATA.irmaa_thresholds[filing]) {
+        if (magi <= threshold) return [bS, dS];
+      }
+      return [0, 0];
+    }
+
+    // formatting helpers to mimic the monospace Python output
+    function money(v, dec = 0) {
+      return v.toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+    }
+    function padMoney(v, dec = 0) { return ('$' + money(v, dec)).padStart(13); }
+    function pct(v) { return (v.toFixed(2) + '%').padStart(12); }
+
+    const SAVE_KEY = 'tax_calculator_last_input';
+
+    function getInputs() {
+      return {
+        withdrawal: document.getElementById('withdrawal').value,
+        rmd: document.getElementById('rmd').value,
+        ss: document.getElementById('ss').value,
+        interest: document.getElementById('interest').value,
+        ca_refund: document.getElementById('ca_refund').value,
+        capital_loss: document.getElementById('capital_loss').value,
+        itemized: document.getElementById('itemized').value,
+        filing_status: document.querySelector('input[name=filing]:checked').value,
+        is_65: document.getElementById('is_65').checked,
+        senior_count: document.getElementById('senior_count').value
+      };
+    }
+
+    function saveInputs() {
+      try { localStorage.setItem(SAVE_KEY, JSON.stringify(getInputs())); } catch (e) { }
+    }
+
+    function loadInputs() {
+      try {
+        const raw = localStorage.getItem(SAVE_KEY);
+        if (!raw) return;
+        const d = JSON.parse(raw);
+        if (d.withdrawal !== undefined) document.getElementById('withdrawal').value = d.withdrawal;
+        if (d.rmd !== undefined) document.getElementById('rmd').value = d.rmd;
+        if (d.ss !== undefined) document.getElementById('ss').value = d.ss;
+        if (d.interest !== undefined) document.getElementById('interest').value = d.interest;
+        if (d.ca_refund !== undefined) document.getElementById('ca_refund').value = d.ca_refund;
+        if (d.capital_loss !== undefined) document.getElementById('capital_loss').value = d.capital_loss;
+        if (d.itemized !== undefined) document.getElementById('itemized').value = d.itemized;
+        if (d.filing_status) document.querySelector(`input[name=filing][value=${d.filing_status}]`).checked = true;
+        if (d.is_65 !== undefined) document.getElementById('is_65').checked = d.is_65;
+        if (d.senior_count !== undefined) document.getElementById('senior_count').value = d.senior_count;
+      } catch (e) { }
+      toggleSenior();
+    }
+
+    function toggleSenior() {
+      document.getElementById('senior_count_row').style.display =
+        document.getElementById('is_65').checked ? 'flex' : 'none';
+    }
+
+    function num(id) { const v = parseFloat(document.getElementById(id).value); return isNaN(v) ? 0 : v; }
+
+    function perform() {
+      const warnings = document.getElementById('warnings');
+      warnings.innerHTML = '';
+
+      const withdrawal = num('withdrawal');
+      const rmd = num('rmd');
+
+      const ssBenefits = num('ss');
+      const interest = num('interest');
+      const caRefund = num('ca_refund');
+      const capitalLoss = num('capital_loss');
+      const itemized = num('itemized');
+      const filing = document.querySelector('input[name=filing]:checked').value;
+      let num65 = document.getElementById('is_65').checked ? parseInt(document.getElementById('senior_count').value || '0', 10) : 0;
+      if (filing === 'single' && num65 > 1) num65 = 1;
+
+      const caWithheld = Math.ceil((withdrawal + rmd) * 0.02); // 2% withheld for CA tax
+
+      // Calculations
+      const deductibleLoss = Math.min(capitalLoss, 3000.0); // 3000 of capital loss is deductible
+      const preSsIncome = withdrawal + rmd + interest + caRefund - deductibleLoss;
+      const provisionalIncome = preSsIncome + 0.5 * ssBenefits;
+      const taxableSs = Math.ceil(calcTaxableSS(ssBenefits, provisionalIncome, filing));
+
+      const agiBase = Math.ceil(preSsIncome + taxableSs);
+
+      // Senior Bonus (Projected 2026 rule)
+      let seniorBonus = 0.0;
+      if (num65 > 0) {
+        const rawBonus = 6000.0 * num65;
+        const threshold = filing === 'single' ? 75000.0 : 150000.0;
+        const reduction = Math.max(0, (agiBase - threshold) * 0.06);
+        seniorBonus = Math.ceil(Math.max(0.0, rawBonus - reduction));
+      }
+
+      const agi = Math.ceil(agiBase - seniorBonus);
+
+      // Standard Deduction
+      const sd = DATA.standard_deduction[filing];
+      const standardDeduction = sd.base + sd.senior * num65;
+      const finalDeduction = Math.ceil(Math.max(standardDeduction, itemized));
+
+      // Federal tax
+      const taxableIncome = Math.ceil(Math.max(0, agi - finalDeduction));
+      const taxAmount = Math.ceil(calcFederalTax(taxableIncome, filing));
+
+      // California State Tax (CA does not tax SS or CA tax refund)
+      const caItemized = Math.max(0, itemized - caWithheld);
+      const caSd = DATA.ca_standard_deduction[filing];
+      const caFinalDeduction = Math.max(caSd, caItemized);
+      const caTaxableIncome = Math.ceil(Math.max(0, preSsIncome - caRefund - caFinalDeduction));
+      const caTaxAmount = Math.ceil(calcCaTax(caTaxableIncome, filing, num65));
+
+      // Withholding & balances
+      const taxWithheld = Math.ceil((withdrawal + rmd) * 0.20); // 20% withheld for fed tax
+      const taxBalance = taxAmount - taxWithheld;
+      const balanceLabel = taxBalance >= 0 ? "Fed Tax Due:  " : "Fed Refund:   ";
+
+      const caBalance = caTaxAmount - caWithheld;
+      const caBalanceLabel = caBalance >= 0 ? "CA Tax Due:   " : "CA Refund:    ";
+
+      // Medicare / IRMAA
+      const [bSurcharge, dSurcharge] = calcIrmaa(agiBase, filing);
+      const totalPartBMonthly = BASE_PART_B + bSurcharge;
+      const totalIrmaaAnnual = Math.ceil((bSurcharge + dSurcharge) * 12);
+
+      // Combined totals
+      const totalTaxIrmaa = taxAmount + caTaxAmount + totalIrmaaAnnual;
+      const totalDueCombined = taxBalance + caBalance + totalIrmaaAnnual;
+      const combinedBalanceLabel = totalDueCombined >= 0 ? "Total Combined Due: " : "Total Est. Refund:  ";
+
+      // Cash left after all taxes and IRMAA are paid, out of the total distribution
+      // (withdrawal + RMD). Withholding is prepayment from the same distribution, so
+      // subtract full liability, not balance due.
+      const cashAfterTax = (withdrawal + rmd) - totalTaxIrmaa;
+
+      // Rates
+      const rateTaxable = taxableIncome > 0 ? taxAmount / taxableIncome * 100 : 0;
+      const rateAgi = agi > 0 ? taxAmount / agi * 100 : 0;
+
+      // Federal marginal tax bracket (the rate the top dollar of taxable income falls in)
+      const fedBrackets = DATA.federal_brackets[filing];
+      let marginalRate = 0;
+      for (const [threshold, rate] of fedBrackets) {
+        marginalRate = rate * 100;
+        if (taxableIncome <= threshold) break;
+      }
+
+      const lines = [
+        ('--- ' + YEAR + ' Results ---').padStart(25).padEnd(35),
+        'Taxable SS Income:    ' + padMoney(taxableSs),
+        'Senior Bonus (65+):   ' + padMoney(seniorBonus),
+        'AGI (Federal):        ' + padMoney(agi),
+        'Taxable (Federal):    ' + padMoney(taxableIncome),
+        'Federal Tax Amount:   ' + padMoney(taxAmount),
+        '-----------------------------------',
+        'Taxable (CA State):   ' + padMoney(caTaxableIncome),
+        'CA State Tax Amount:  ' + padMoney(caTaxAmount),
+        '-----------------------------------',
+        'MAGI (for IRMAA):     ' + padMoney(agiBase),
+        'Total Annual IRMAA:   ' + padMoney(totalIrmaaAnnual),
+        '-----------------------------------',
+        'Total Tax + IRMAA:    ' + padMoney(totalTaxIrmaa),
+        '-----------------------------------',
+        'Cash After Tax:       ' + padMoney(cashAfterTax),
+        '-----------------------------------',
+        'Fed Tax Bracket:      ' + marginalRate.toFixed(0).padStart(11) + '%',
+        'Rate (on Taxable):    ' + pct(rateTaxable),
+        'Rate (on AGI):        ' + pct(rateAgi),
+        '-----------------------------------',
+        '20% Fed Withheld:     ' + padMoney(taxWithheld),
+        balanceLabel + '       ' + padMoney(Math.abs(taxBalance)),
+        '-----------------------------------',
+        '2% CA Withheld:       ' + padMoney(caWithheld),
+        caBalanceLabel + '     ' + padMoney(Math.abs(caBalance)),
+        '-----------------------------------',
+        combinedBalanceLabel + ' ' + padMoney(Math.abs(totalDueCombined)),
+        '-----------------------------------',
+        'Part B Surcharge:     ' + padMoney(bSurcharge, 2) + '/mo',
+        'Part B Total Premium: ' + padMoney(totalPartBMonthly, 2) + '/mo',
+        'Part D Surcharge:     ' + padMoney(dSurcharge, 2) + '/mo',
+        'Total Annual IRMAA:   ' + padMoney(totalIrmaaAnnual)
+      ];
+      document.getElementById('results').textContent = lines.join('\n');
+      saveInputs();
+
+      // Warnings
+      if (withdrawal > 0 && rmd > 0) {
+        warnings.innerHTML += '<div class="warn">' +
+          "You've entered both RMD and Withdrawal amounts." +
+          '</div>';
+      }
+
+      if (marginalRate > 24) {
+        warnings.innerHTML += '<div class="warn-red">' +
+          'Warning: Federal Tax Bracket exceeds 24%! (Current: ' + marginalRate.toFixed(0) + '%)' +
+          '</div>';
+      }
+
+      if (rateTaxable > 22.0 || rateAgi > 22.0) {
+        let threshold22 = 0;
+        for (const [threshold, rate] of fedBrackets) {
+          if (Math.abs(rate - 0.22) < 0.001) { threshold22 = threshold; break; }
+        }
+        const excess = Math.max(0, taxableIncome - threshold22);
+        warnings.innerHTML += '<div class="warn">' +
+          'Warning: Federal Tax Rate exceeds 22%!\n\n' +
+          'Current Rates:\n' +
+          '- Marginal Tax Bracket: ' + marginalRate.toFixed(1) + '%\n' +
+          '- Effective Rate (on Taxable): ' + rateTaxable.toFixed(2) + '%\n' +
+          '- Effective Rate (on AGI): ' + rateAgi.toFixed(2) + '%\n\n' +
+          'Taxable Income exceeding 22% bracket ($' + money(threshold22) + '): $' + money(excess) +
+          '</div>';
+      }
+
+      const totalDist = withdrawal + rmd;
+      if (totalDist < 100000) {
+        if (agiBase >= 109000 && totalIrmaaAnnual > 0) {
+          warnings.innerHTML += '<div class="warn">' +
+            'MAGI Warning: MAGI is >= 109000 for total distribution less than 100000 and there is an IRMAA surcharge.\n\n' +
+            'MAGI: $' + money(agiBase) + '\nTotal RMD: $' + money(rmd) +
+            '\nTotal Withdrawal: $' + money(withdrawal) + '\nTotal Annual IRMAA: $' + money(totalIrmaaAnnual) +
+            '</div>';
+        }
+      } else {
+        if (agiBase >= 137000 && totalIrmaaAnnual > 0) {
+          warnings.innerHTML += '<div class="warn">' +
+            'MAGI Warning: MAGI is >= 137000 for total distribution more than 100000 and there is an IRMAA surcharge.\n\n' +
+            'MAGI: $' + money(agiBase) + '\nTotal RMD: $' + money(rmd) +
+            '\nTotal Withdrawal: $' + money(withdrawal) + '\nTotal Annual IRMAA: $' + money(totalIrmaaAnnual) +
+            '</div>';
+        }
+      }
+    }
+
+    document.getElementById('calc').addEventListener('click', perform);
+    document.getElementById('is_65').addEventListener('change', toggleSenior);
+    loadInputs();
+    fetchLiveData();
+  </script>
+</body>
+
+</html>
