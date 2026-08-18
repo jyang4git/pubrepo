@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Activity Sign-Up Board</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --paper: #F5F1E4;
+      --paper-dark: #EAE3CE;
+      --ticket: #FFFDF7;
+      --ink: #22242A;
+      --pine: #1F5D52;
+      --pine-dark: #163F38;
+      --gold: #E4A639;
+      --cranberry: #A63248;
+      --line: rgba(34, 36, 42, 0.14);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--paper);
+      background-image: repeating-linear-gradient(135deg, rgba(34, 36, 42, 0.02) 0px, rgba(34, 36, 42, 0.02) 1px, transparent 1px, transparent 14px);
+      color: var(--ink);
+      font-family: 'IBM Plex Sans', sans-serif;
+      min-height: 100vh;
+    }
+
+    button,
+    input,
+    textarea {
+      font-family: inherit;
+    }
+
+    button {
+      font: inherit;
+    }
+
+    button:focus-visible,
+    input:focus-visible,
+    textarea:focus-visible,
+    a:focus-visible {
+      outline: 2.5px solid var(--gold);
+      outline-offset: 2px;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+      padding: 24px max(20px, 5vw);
+      border-bottom: 2px solid var(--ink);
+      background: var(--ticket);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand h1 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700;
+      font-size: 21px;
+      margin: 0;
+      letter-spacing: -0.01em;
+    }
+
+    .brand .tagline {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10.5px;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: rgba(34, 36, 42, .55);
+      margin-top: 2px;
+    }
+
+    .view-toggle {
+      display: flex;
+      background: var(--paper-dark);
+      border-radius: 999px;
+      padding: 4px;
+      gap: 4px;
+      border: 1px solid var(--line);
+    }
+
+    .view-toggle button {
+      border: none;
+      background: transparent;
+      padding: 9px 18px;
+      border-radius: 999px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      color: rgba(34, 36, 42, .6);
+      transition: all .18s ease;
+    }
+
+    .view-toggle button.active {
+      background: var(--pine);
+      color: #fff;
+      box-shadow: 0 2px 6px rgba(31, 93, 82, .35);
+    }
+
+    .view-toggle button:hover:not(.active) {
+      color: var(--ink);
+    }
+
+    main {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 40px max(20px, 5vw) 90px;
+    }
+
+    .loading {
+      padding: 90px 24px;
+      text-align: center;
+      font-family: 'IBM Plex Mono', monospace;
+      color: rgba(34, 36, 42, .5);
+      font-size: 13px;
+      letter-spacing: .04em;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 70px 24px;
+    }
+
+    .empty-icon {
+      font-size: 38px;
+      margin-bottom: 14px;
+    }
+
+    .empty-state h2 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 20px;
+      margin: 0 0 8px;
+    }
+
+    .empty-state p {
+      color: rgba(34, 36, 42, .6);
+      font-size: 14px;
+      margin: 0;
+    }
+
+    /* Board grid */
+    .board-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+      gap: 26px;
+    }
+
+    /* Ticket card */
+    .ticket {
+      background: var(--ticket);
+      border: 1.5px solid var(--ink);
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 4px 4px 0 rgba(34, 36, 42, .08);
+      transition: transform .18s ease, box-shadow .18s ease;
+      animation: ticketIn .35s ease both;
+    }
+
+    .ticket:hover {
+      transform: translateY(-3px);
+      box-shadow: 6px 8px 0 rgba(34, 36, 42, .12);
+    }
+
+    @keyframes ticketIn {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .ticket-main {
+      position: relative;
+      padding: 22px 22px 18px;
+    }
+
+    .ticket.editable .ticket-main {
+      padding-right: 150px;
+    }
+
+    .ticket-admin-actions {
+      position: absolute;
+      top: 18px;
+      right: 18px;
+      display: flex;
+      gap: 8px;
+    }
+
+    .ghost-btn {
+      background: transparent;
+      border: 1px solid var(--line);
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10.5px;
+      cursor: pointer;
+      color: rgba(34, 36, 42, .65);
+    }
+
+    .ghost-btn:hover {
+      background: var(--paper-dark);
+    }
+
+    .ghost-btn.danger-confirm {
+      background: var(--cranberry);
+      color: #fff;
+      border-color: var(--cranberry);
+    }
+
+    .ticket-eyebrow {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--pine);
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .ticket-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      margin: 0 0 8px;
+      line-height: 1.25;
+    }
+
+    .ticket-desc {
+      font-size: 13.5px;
+      line-height: 1.55;
+      color: rgba(34, 36, 42, .75);
+      margin: 0 0 16px;
+      white-space: pre-wrap;
+    }
+
+    .ticket-meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .meta {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      padding: 5px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--line);
+      background: var(--paper-dark);
+    }
+
+    .meta.cost {
+      color: var(--pine-dark);
+      font-weight: 600;
+      border-color: rgba(31, 93, 82, .25);
+      background: rgba(31, 93, 82, .08);
+    }
+
+    .meta.cost.free {
+      color: #6b5310;
+      border-color: rgba(228, 166, 57, .45);
+      background: rgba(228, 166, 57, .16);
+    }
+
+    .meta.zelle {
+      color: #6b5310;
+      background: rgba(228, 166, 57, .14);
+      border-color: rgba(228, 166, 57, .4);
+    }
+
+    .tear {
+      position: relative;
+      height: 0;
+      border-top: 2px dashed rgba(34, 36, 42, .28);
+      margin: 0 18px;
+    }
+
+    .tear::before,
+    .tear::after {
+      content: "";
+      position: absolute;
+      top: -7px;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--paper);
+      border: 1.5px solid rgba(34, 36, 42, .28);
+    }
+
+    .tear::before {
+      left: -7px;
+    }
+
+    .tear::after {
+      right: -7px;
+    }
+
+    .ticket-stub {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 16px 22px 14px;
+      background: rgba(228, 166, 57, .05);
+    }
+
+    .stub-stats {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12.5px;
+      color: rgba(34, 36, 42, .65);
+    }
+
+    .btn-signup {
+      background: var(--pine);
+      color: #fff;
+      border: none;
+      padding: 9px 16px;
+      border-radius: 8px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      transition: background .15s ease, transform .1s ease;
+    }
+
+    .btn-signup:hover {
+      background: var(--pine-dark);
+    }
+
+    .btn-signup:active {
+      transform: scale(.97);
+    }
+
+    .signup-form {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      padding: 14px 22px;
+      border-top: 1px dashed rgba(34, 36, 42, .2);
+    }
+
+    .signup-form input {
+      flex: 1;
+      min-width: 130px;
+      padding: 9px 12px;
+      border: 1.5px solid var(--ink);
+      border-radius: 8px;
+      font-size: 13.5px;
+      background: #fff;
+    }
+
+    .btn-confirm {
+      background: var(--gold);
+      color: var(--ink);
+      border: none;
+      padding: 9px 16px;
+      border-radius: 8px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .btn-confirm:hover {
+      filter: brightness(1.05);
+    }
+
+    .roster-toggle {
+      display: block;
+      width: 100%;
+      text-align: left;
+      background: transparent;
+      border: none;
+      border-top: 1px solid var(--line);
+      padding: 11px 22px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11.5px;
+      color: var(--pine-dark);
+      cursor: pointer;
+      text-decoration: underline dotted;
+      text-underline-offset: 3px;
+    }
+
+    .roster-toggle:hover {
+      background: var(--paper-dark);
+    }
+
+    .roster-list {
+      padding: 6px 22px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .roster-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      font-size: 13px;
+    }
+
+    .roster-name {
+      font-weight: 500;
+      overflow-wrap: anywhere;
+    }
+
+    .roster-empty {
+      font-size: 12.5px;
+      color: rgba(34, 36, 42, .5);
+      font-style: italic;
+      padding: 4px 2px;
+    }
+
+    .roster-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .badge-paid {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10.5px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      padding: 4px 9px;
+      border-radius: 999px;
+      font-weight: 600;
+      border: none;
+    }
+
+    .badge-paid.yes {
+      background: rgba(31, 93, 82, .14);
+      color: var(--pine-dark);
+    }
+
+    .badge-paid.no {
+      background: rgba(166, 50, 72, .12);
+      color: var(--cranberry);
+    }
+
+    button.badge-paid {
+      cursor: pointer;
+    }
+
+    .remove-x {
+      background: transparent;
+      border: none;
+      color: rgba(34, 36, 42, .4);
+      font-size: 17px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 2px 4px;
+    }
+
+    .remove-x:hover {
+      color: var(--cranberry);
+    }
+
+    /* Admin layout */
+    .admin-layout {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 28px;
+      align-items: start;
+    }
+
+    @media (max-width:860px) {
+      .admin-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .form-panel {
+      background: var(--ticket);
+      border: 1.5px solid var(--ink);
+      border-radius: 14px;
+      padding: 22px;
+      box-shadow: 4px 4px 0 rgba(34, 36, 42, .08);
+      position: sticky;
+      top: 20px;
+    }
+
+    .form-panel h2 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 17px;
+      margin: 0 0 16px;
+    }
+
+    .form-panel label {
+      display: block;
+      margin-bottom: 14px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10.5px;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      color: rgba(34, 36, 42, .6);
+    }
+
+    .form-panel input,
+    .form-panel textarea {
+      display: block;
+      width: 100%;
+      margin-top: 6px;
+      padding: 10px 12px;
+      border: 1.5px solid var(--ink);
+      border-radius: 8px;
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 13.5px;
+      background: #fff;
+      color: var(--ink);
+    }
+
+    .form-panel textarea {
+      resize: vertical;
+      min-height: 60px;
+    }
+
+    .form-actions {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-top: 4px;
+    }
+
+    .btn-primary {
+      background: var(--pine);
+      color: #fff;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 600;
+      font-size: 13.5px;
+      cursor: pointer;
+    }
+
+    .btn-primary:hover {
+      background: var(--pine-dark);
+    }
+
+    .btn-cancel {
+      background: transparent;
+      border: none;
+      color: rgba(34, 36, 42, .55);
+      font-size: 12.5px;
+      cursor: pointer;
+      text-decoration: underline;
+      padding: 4px;
+    }
+
+    .admin-list {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    /* PIN modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(20, 20, 24, .55);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 50;
+    }
+
+    .modal-card {
+      background: var(--ticket);
+      border: 1.5px solid var(--ink);
+      border-radius: 14px;
+      padding: 26px;
+      max-width: 320px;
+      width: 100%;
+      box-shadow: 6px 8px 0 rgba(34, 36, 42, .15);
+    }
+
+    .modal-card h2 {
+      font-family: 'Space Grotesk', sans-serif;
+      margin: 0 0 6px;
+      font-size: 18px;
+    }
+
+    .modal-card p {
+      font-size: 13px;
+      color: rgba(34, 36, 42, .65);
+      margin: 0 0 16px;
+    }
+
+    .modal-card input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1.5px solid var(--ink);
+      border-radius: 8px;
+      font-size: 14px;
+      margin-bottom: 10px;
+    }
+
+    .pin-error {
+      color: var(--cranberry);
+      font-size: 12px;
+      margin: -4px 0 10px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation: none !important;
+        transition: none !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app"></div>
+
+  <!--
+  SETUP (one-time, ~5 minutes) — needed because this page is hosted as a plain
+  static file on GitHub Pages, with no server of its own. To let every visitor
+  read and write the same shared list, it stores data in a free Firebase
+  Realtime Database instead.
+
+  1. Go to https://console.firebase.google.com -> "Add project" (free tier is fine).
+  2. In your new project, click the </> (web app) icon to register a web app.
+     Give it any nickname, skip Firebase Hosting.
+  3. Firebase will show you a `firebaseConfig` object. Copy it and paste it
+     over the placeholder values in the `firebaseConfig` block below.
+  4. In the left sidebar go to Databases & Storage -> Realtime Database -> Create Database.
+     Pick any region, and choose "Start in test mode" for now.
+  5. Click the "Rules" tab of the Realtime Database and set:
+        { "rules": { ".read": true, ".write": true } }
+     then click Publish. (This makes the board fully open -- anyone with the
+     page URL can read/write it, same trust model as the in-app admin PIN
+     below. Fine for a small group; don't use it for sensitive data.)
+  6. Save this file, commit and push it to your public GitHub repo, and
+     enable GitHub Pages (repo Settings -> Pages -> deploy from branch).
+  7. Share the GitHub Pages URL with participants.
+-->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+  <script>
+    const ADMIN_PIN = '1234'; // light deterrent only — change this if you want a different code
+
+    // Paste your Firebase project's config here (see setup comment above the script tags).
+    const firebaseConfig = {
+      apiKey: "AIzaSyAOUCusZ0UhP6L3enbEmuQr-PNhj4kgV_s",
+      authDomain: "group-activity-sign-up-d844c.firebaseapp.com",
+      projectId: "group-activity-sign-up-d844c",
+      storageBucket: "group-activity-sign-up-d844c.firebasestorage.app",
+      messagingSenderId: "753097743600",
+      appId: "1:753097743600:web:aecd47b35d8a71a4997635",
+      measurementId: "G-T2356FMDJF"
+    };
+    const firebaseReady = !!(firebaseConfig.apiKey && firebaseConfig.apiKey !== "YOUR_API_KEY");
+    let dbRef = null;
+    if (firebaseReady) {
+      firebase.initializeApp(firebaseConfig);
+      dbRef = firebase.database().ref('activitySignupApp');
+    }
+
+    let appData = { activities: [], signups: {} };
+    let currentView = 'signup';
+    let unlockedAdmin = false;
+    let editingId = null;
+    let openSignupFor = null;
+    let expandedRoster = new Set();
+    let pendingDelete = null;
+    let pinModalOpen = false;
+    let pinError = false;
+
+    function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+
+    function escapeHtml(str) {
+      return String(str == null ? '' : str).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+    }
+
+    function formatDate(dateStr) {
+      if (!dateStr) return '';
+      const d = new Date(dateStr + 'T00:00:00');
+      if (isNaN(d.getTime())) return dateStr;
+      return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase();
+    }
+
+    function getSortedActivities() {
+      return [...appData.activities].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+    }
+
+    function getRoster(activityId) {
+      return appData.signups[activityId] || [];
+    }
+
+    function normalizeData(raw) {
+      return { activities: (raw && raw.activities) || [], signups: (raw && raw.signups) || {} };
+    }
+
+    async function saveData() {
+      if (!dbRef) return;
+      try {
+        await dbRef.set(appData);
+      } catch (err) {
+        console.error('Save failed', err);
+        alert("Couldn't save that change. Check your connection, or make sure the Firebase database rules allow write access, and try again.");
+      }
+    }
+
+    function headerHTML() {
+      return `
+    <header class="header">
+      <div class="brand">
+        <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
+          <rect x="2" y="6" width="24" height="16" rx="4" fill="#1F5D52"/>
+          <line x1="19" y1="6" x2="19" y2="22" stroke="#F5F1E4" stroke-width="2" stroke-dasharray="2.5 2.5"/>
+          <circle cx="19" cy="6" r="2" fill="#F5F1E4"/>
+          <circle cx="19" cy="22" r="2" fill="#F5F1E4"/>
+        </svg>
+        <div>
+          <h1>Activity Sign-Up</h1>
+          <div class="tagline">Post it. Share it. Fill the roster.</div>
+        </div>
+      </div>
+      <div class="view-toggle">
+        <button type="button" class="${currentView === 'signup' ? 'active' : ''}" data-action="switch-view" data-target="signup">Sign-up board</button>
+        <button type="button" class="${currentView === 'admin' ? 'active' : ''}" data-action="switch-view" data-target="admin">Admin</button>
+      </div>
+    </header>`;
+    }
+
+    function pinModalHTML() {
+      return `
+    <div class="modal-overlay" data-overlay="pin">
+      <div class="modal-card">
+        <h2>Admin access</h2>
+        <p>Enter the admin PIN to manage activities.</p>
+        <form data-form="pin">
+          <input type="password" name="pin" placeholder="PIN" autocomplete="off" />
+          ${pinError ? '<div class="pin-error">Incorrect PIN — try again.</div>' : ''}
+          <div class="form-actions">
+            <button type="submit" class="btn-primary">Unlock</button>
+            <button type="button" class="btn-cancel" data-action="close-pin">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>`;
+    }
+
+    function ticketCardHTML(activity, editable) {
+      const roster = getRoster(activity.id);
+      const paidCount = roster.filter(p => p.paid).length;
+      const costNum = Number(activity.cost) || 0;
+      const costDisplay = costNum === 0 ? 'Free' : `$${costNum.toFixed(2)}`;
+      const rosterExpanded = expandedRoster.has(activity.id);
+      const signupOpen = openSignupFor === activity.id;
+      const pendingThisDelete = pendingDelete === activity.id;
+
+      const editButtons = editable ? `
+      <div class="ticket-admin-actions">
+        <button type="button" class="ghost-btn" data-action="edit-activity" data-id="${activity.id}">Edit</button>
+        <button type="button" class="ghost-btn ${pendingThisDelete ? 'danger-confirm' : ''}" data-action="delete-activity" data-id="${activity.id}">${pendingThisDelete ? 'Confirm?' : 'Delete'}</button>
+      </div>` : '';
+
+      const rosterRows = roster.length ? roster.map(p => `
+      <div class="roster-row">
+        <span class="roster-name">${escapeHtml(p.name)}</span>
+        <span class="roster-controls">
+          ${editable
+          ? `<button type="button" class="badge-paid ${p.paid ? 'yes' : 'no'}" data-action="toggle-paid" data-activity="${activity.id}" data-signup="${p.id}" title="Click to toggle paid status">${p.paid ? 'Paid' : 'Unpaid'}</button>`
+          : `<span class="badge-paid ${p.paid ? 'yes' : 'no'}">${p.paid ? 'Paid' : 'Unpaid'}</span>`}
+          <button type="button" class="remove-x" data-action="remove-signup" data-activity="${activity.id}" data-signup="${p.id}" title="Remove from list">×</button>
+        </span>
+      </div>`).join('') : `<div class="roster-empty">No one signed up yet — be the first.</div>`;
+
+      const signupFormHtml = signupOpen ? `
+      <form class="signup-form" data-form="signup" data-activity-id="${activity.id}">
+        <input type="text" name="name" placeholder="Your name" required maxlength="60" />
+        <button type="submit" class="btn-confirm">Add</button>
+        <button type="button" class="btn-cancel" data-action="close-signup-form">Cancel</button>
+      </form>` : '';
+
+      return `
+    <article class="ticket ${editable ? 'editable' : ''}">
+      <div class="ticket-main">
+        ${editButtons}
+        <div class="ticket-eyebrow">${formatDate(activity.date)}</div>
+        <h3 class="ticket-title">${escapeHtml(activity.title)}</h3>
+        ${activity.description ? `<p class="ticket-desc">${escapeHtml(activity.description)}</p>` : ''}
+        <div class="ticket-meta-row">
+          <span class="meta cost ${costNum === 0 ? 'free' : ''}">${costDisplay}</span>
+          <span class="meta zelle">Zelle: ${escapeHtml(activity.zellePhone)}</span>
+        </div>
+      </div>
+      <div class="tear"></div>
+      <div class="ticket-stub">
+        <div class="stub-stats">${roster.length} signed up${roster.length ? ` · ${paidCount} paid` : ''}</div>
+        ${signupOpen ? '' : `<button type="button" class="btn-signup" data-action="open-signup-form" data-id="${activity.id}">Sign up</button>`}
+      </div>
+      ${signupFormHtml}
+      <button type="button" class="roster-toggle" data-action="toggle-roster" data-id="${activity.id}">${rosterExpanded ? 'Hide list' : `View list (${roster.length})`}</button>
+      ${rosterExpanded ? `<div class="roster-list">${rosterRows}</div>` : ''}
+    </article>`;
+    }
+
+    function renderSignupView() {
+      const activities = getSortedActivities();
+      if (!activities.length) {
+        return `<div class="empty-state">
+        <div class="empty-icon">🎟️</div>
+        <h2>The board is empty</h2>
+        <p>Nothing's been posted yet. Check back soon.</p>
+      </div>`;
+      }
+      return `<div class="board-grid">${activities.map(a => ticketCardHTML(a, false)).join('')}</div>`;
+    }
+
+    function activityFormHTML() {
+      const editing = editingId ? appData.activities.find(a => a.id === editingId) : null;
+      return `
+    <div class="form-panel">
+      <h2>${editing ? 'Edit activity' : 'New activity'}</h2>
+      <form data-form="activity">
+        <label>Title
+          <input type="text" name="title" required maxlength="80" value="${editing ? escapeHtml(editing.title) : ''}" placeholder="e.g., Saturday Trail Hike" />
+        </label>
+        <label>Description
+          <textarea name="description" rows="3" maxlength="400" placeholder="What to expect, what to bring…">${editing ? escapeHtml(editing.description || '') : ''}</textarea>
+        </label>
+        <label>Date
+          <input type="date" name="date" required value="${editing ? editing.date : ''}" />
+        </label>
+        <label>Cost per person
+          <input type="number" name="cost" min="0" step="0.01" required value="${editing != null ? editing.cost : ''}" placeholder="0.00" />
+        </label>
+        <label>Zelle number for payment
+          <input type="text" name="zellePhone" required maxlength="40" value="${editing ? escapeHtml(editing.zellePhone) : ''}" placeholder="(555) 123-4567" />
+        </label>
+        <div class="form-actions">
+          <button type="submit" class="btn-primary">${editing ? 'Save changes' : 'Post activity'}</button>
+          ${editing ? `<button type="button" class="btn-cancel" data-action="cancel-edit">Cancel</button>` : ''}
+        </div>
+      </form>
+    </div>`;
+    }
+
+    function renderAdminView() {
+      const activities = getSortedActivities();
+      const list = activities.length ? activities.map(a => ticketCardHTML(a, true)).join('') : `
+      <div class="empty-state">
+        <div class="empty-icon">📋</div>
+        <h2>No activities yet</h2>
+        <p>Post the first one using the form.</p>
+      </div>`;
+      return `<div class="admin-layout">
+      ${activityFormHTML()}
+      <div class="admin-list">${list}</div>
+    </div>`;
+    }
+
+    function render() {
+      const app = document.getElementById('app');
+      app.innerHTML = `
+      ${headerHTML()}
+      <main>${currentView === 'signup' ? renderSignupView() : renderAdminView()}</main>
+      ${pinModalOpen ? pinModalHTML() : ''}
+    `;
+      if (openSignupFor) {
+        const inp = app.querySelector(`.signup-form[data-activity-id="${openSignupFor}"] input[name="name"]`);
+        if (inp) inp.focus();
+      }
+      if (pinModalOpen) {
+        const inp = app.querySelector('input[name="pin"]');
+        if (inp) inp.focus();
+      }
+    }
+
+    document.getElementById('app').addEventListener('click', async (e) => {
+      if (e.target.matches('[data-overlay="pin"]')) {
+        pinModalOpen = false; pinError = false; render(); return;
+      }
+      const btn = e.target.closest('[data-action]');
+      if (!btn) return;
+      const action = btn.dataset.action;
+      const id = btn.dataset.id;
+
+      if (action === 'switch-view') {
+        const target = btn.dataset.target;
+        if (target === 'admin') {
+          if (unlockedAdmin) { currentView = 'admin'; render(); }
+          else { pinModalOpen = true; pinError = false; render(); }
+        } else {
+          currentView = 'signup'; render();
+        }
+      } else if (action === 'close-pin') {
+        pinModalOpen = false; pinError = false; render();
+      } else if (action === 'edit-activity') {
+        editingId = id; currentView = 'admin'; render();
+        const panel = document.querySelector('.form-panel');
+        if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else if (action === 'cancel-edit') {
+        editingId = null; render();
+      } else if (action === 'delete-activity') {
+        if (pendingDelete !== id) {
+          pendingDelete = id; render();
+          setTimeout(() => { if (pendingDelete === id) { pendingDelete = null; render(); } }, 3000);
+        } else {
+          appData.activities = appData.activities.filter(a => a.id !== id);
+          delete appData.signups[id];
+          pendingDelete = null;
+          if (editingId === id) editingId = null;
+          await saveData();
+          render();
+        }
+      } else if (action === 'toggle-roster') {
+        if (expandedRoster.has(id)) expandedRoster.delete(id); else expandedRoster.add(id);
+        render();
+      } else if (action === 'open-signup-form') {
+        openSignupFor = id; render();
+      } else if (action === 'close-signup-form') {
+        openSignupFor = null; render();
+      } else if (action === 'toggle-paid') {
+        const aId = btn.dataset.activity, sId = btn.dataset.signup;
+        const roster = appData.signups[aId] || [];
+        const p = roster.find(x => x.id === sId);
+        if (p) { p.paid = !p.paid; await saveData(); render(); }
+      } else if (action === 'remove-signup') {
+        const aId = btn.dataset.activity, sId = btn.dataset.signup;
+        appData.signups[aId] = (appData.signups[aId] || []).filter(x => x.id !== sId);
+        await saveData(); render();
+      }
+    });
+
+    document.getElementById('app').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const form = e.target;
+      const kind = form.dataset.form;
+
+      if (kind === 'activity') {
+        const fd = new FormData(form);
+        const title = (fd.get('title') || '').trim();
+        const description = (fd.get('description') || '').trim();
+        const date = fd.get('date');
+        const cost = parseFloat(fd.get('cost'));
+        const zellePhone = (fd.get('zellePhone') || '').trim();
+        if (!title || !date || isNaN(cost) || cost < 0 || !zellePhone) return;
+
+        if (editingId) {
+          const a = appData.activities.find(x => x.id === editingId);
+          if (a) { a.title = title; a.description = description; a.date = date; a.cost = cost; a.zellePhone = zellePhone; }
+          editingId = null;
+        } else {
+          appData.activities.push({ id: uid(), title, description, date, cost, zellePhone, createdAt: Date.now() });
+        }
+        await saveData();
+        render();
+      } else if (kind === 'signup') {
+        const activityId = form.dataset.activityId;
+        const fd = new FormData(form);
+        const name = (fd.get('name') || '').trim();
+        if (!name) return;
+        if (!appData.signups[activityId]) appData.signups[activityId] = [];
+        appData.signups[activityId].push({ id: uid(), name, paid: false });
+        openSignupFor = null;
+        await saveData();
+        render();
+      } else if (kind === 'pin') {
+        const fd = new FormData(form);
+        const val = fd.get('pin');
+        if (val === ADMIN_PIN) {
+          unlockedAdmin = true; currentView = 'admin'; pinModalOpen = false; pinError = false;
+        } else {
+          pinError = true;
+        }
+        render();
+      }
+    });
+
+    function init() {
+      const app = document.getElementById('app');
+      if (!firebaseReady) {
+        app.innerHTML = `<div class="loading" style="max-width:520px;margin:40px auto;text-align:left;line-height:1.65;">
+        <strong>Setup needed.</strong> This board needs a free Firebase database so everyone who opens the page sees the same list. Open this file's source, find the setup comment and the <code>firebaseConfig</code> block near the top of the script, and follow the steps there.
+      </div>`;
+        return;
+      }
+      app.innerHTML = '<div class="loading">Loading the board…</div>';
+      dbRef.on('value', (snapshot) => {
+        appData = normalizeData(snapshot.val());
+        render();
+      }, (err) => {
+        console.error('Realtime sync error', err);
+        app.innerHTML = `<div class="loading" style="max-width:480px;margin:40px auto;text-align:left;line-height:1.6;">
+        <strong>Couldn't connect to the database.</strong> Double-check your <code>firebaseConfig</code> values and that the Realtime Database rules allow read access.
+      </div>`;
+      });
+    }
+    init();
+  </script>
+</body>
+
+</html>
