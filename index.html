@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FocalSense | Focal Length & Crop Factor Calculator</title>
-  <meta name="description" content="Calculate and visualize focal length equivalence and sensor crop factor between APS-C (1.5x) and Full Frame formats with a live viewfinder simulator.">
+  <title>FocalSense | Focal Length & Equivalent Depth of Field Calculator</title>
+  <meta name="description" content="Calculate equivalent depth of field, aperture equivalence, and focal length crop factor between APS-C, M4/3, and Full Frame with an interactive DoF visualizer.">
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -27,63 +27,90 @@
         <i class="fa-solid fa-camera-retro logo-icon"></i>
         <h1>Focal<span>Sense</span></h1>
       </div>
-      <p class="subtitle">APS-C (1.5x Crop) & Full Frame Equivalence Calculator</p>
+      <p class="subtitle">Focal Length & Equivalent Depth of Field (DoF) Calculator</p>
       <div class="badge-container">
-        <span class="badge">Crop Factor: 1.5x</span>
+        <span class="badge" id="header-crop-badge"><i class="fa-solid fa-microchip"></i> Crop Factor: 1.5x (APS-C)</span>
+        <span class="badge badge-accent"><i class="fa-solid fa-circle-dot"></i> Full Optical DoF Simulation</span>
       </div>
     </header>
 
     <!-- Main Content Grid -->
     <main class="app-grid">
       
-      <!-- Column 1: Inputs & Outputs -->
-      <section class="control-panel">
-        
-        <!-- Card 1: Conversion Mode Selection -->
-        <div class="card mode-selector-card">
-          <h2 class="card-title"><i class="fa-solid fa-sliders"></i> Conversion Mode</h2>
-          <div class="mode-toggles">
-            <label class="mode-label active" id="label-mode-forward">
-              <input type="radio" name="conversion-mode" value="forward" checked>
-              <div class="mode-card-content">
-                <i class="fa-solid fa-crop-simple"></i>
-                <div class="mode-text">
-                  <span class="mode-title">Physical to Equivalent</span>
-                  <span class="mode-desc">Lens on APS-C body → FF equivalent look</span>
-                </div>
-              </div>
-            </label>
-            <label class="mode-label" id="label-mode-reverse">
-              <input type="radio" name="conversion-mode" value="reverse">
-              <div class="mode-card-content">
-                <i class="fa-solid fa-bullseye"></i>
-                <div class="mode-text">
-                  <span class="mode-title">Target FOV to Lens</span>
-                  <span class="mode-desc">Wanted FF look → Required physical lens</span>
-                </div>
-              </div>
-            </label>
-          </div>
+      <!-- Sensor Format Selector Card -->
+      <div class="card sensor-selector-card">
+        <div class="card-header-row">
+          <h2 class="card-title"><i class="fa-solid fa-vector-square"></i> Camera Sensor Format</h2>
+          <span class="hint-pill">Determines Crop Multiplier</span>
         </div>
+        <div class="sensor-pills" id="sensor-pills">
+          <button class="sensor-pill active" data-sensor="apsc-1.5">
+            <span class="sensor-title">APS-C (1.5x)</span>
+            <span class="sensor-sub">Sony • Nikon • Fuji</span>
+          </button>
+          <button class="sensor-pill" data-sensor="apsc-canon">
+            <span class="sensor-title">Canon APS-C (1.6x)</span>
+            <span class="sensor-sub">RF-S • EF-S</span>
+          </button>
+          <button class="sensor-pill" data-sensor="m43">
+            <span class="sensor-title">Micro 4/3 (2.0x)</span>
+            <span class="sensor-sub">OM System • Panasonic</span>
+          </button>
+          <button class="sensor-pill" data-sensor="1inch">
+            <span class="sensor-title">1-inch (2.7x)</span>
+            <span class="sensor-sub">Sony RX100 • ZV-1</span>
+          </button>
+        </div>
+      </div>
 
-        <!-- Card 2: Calculator Inputs -->
-        <div class="card calculator-card">
+      <!-- Conversion Mode Selection Card -->
+      <div class="card mode-selector-card">
+        <h2 class="card-title"><i class="fa-solid fa-sliders"></i> Conversion Mode</h2>
+        <div class="mode-toggles">
+          <label class="mode-label active" id="label-mode-forward">
+            <input type="radio" name="conversion-mode" value="forward" checked>
+            <div class="mode-card-content">
+              <i class="fa-solid fa-crop-simple"></i>
+              <div class="mode-text">
+                <span class="mode-title">Physical Lens to Full Frame Equivalent</span>
+                <span class="mode-desc">Lens on crop sensor → Equivalent field of view & depth of field on Full Frame</span>
+              </div>
+            </div>
+          </label>
+          <label class="mode-label" id="label-mode-reverse">
+            <input type="radio" name="conversion-mode" value="reverse">
+            <div class="mode-card-content">
+              <i class="fa-solid fa-bullseye"></i>
+              <div class="mode-text">
+                <span class="mode-title">Target Full Frame Look to Required Physical Lens</span>
+                <span class="mode-desc">Desired Full Frame framing & blur → Required focal length & f-number on crop sensor</span>
+              </div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Calculator Inputs Card -->
+      <div class="card calculator-card">
+        
+        <!-- Section A: Focal Length -->
+        <div class="input-section">
           <div class="card-header-row">
             <h2 class="card-title" id="input-card-title"><i class="fa-solid fa-calculator"></i> Lens Focal Length</h2>
             <div class="unit-badge">mm</div>
           </div>
 
-          <!-- Numeric & Slider Input -->
           <div class="input-group">
             <div class="numeric-input-wrapper">
               <input type="number" id="focal-input" min="8" max="400" value="50" step="1" aria-label="Focal Length Input">
-              <span class="mm-overlay">mm</span>
+              <span class="input-unit-overlay">mm</span>
             </div>
             
             <div class="slider-wrapper">
               <input type="range" id="focal-slider" min="8" max="400" value="50" step="1" aria-label="Focal Length Slider">
               <div class="slider-ticks">
                 <span>8mm</span>
+                <span>35mm</span>
                 <span>50mm</span>
                 <span>85mm</span>
                 <span>135mm</span>
@@ -93,13 +120,13 @@
             </div>
           </div>
 
-          <!-- Preset Presets -->
+          <!-- Focal Presets -->
           <div class="presets-section">
             <span class="section-label">Popular Focal Lengths</span>
-            <div class="presets-grid">
-              <button class="preset-btn" data-val="12">12mm</button>
+            <div class="presets-grid focal-presets">
               <button class="preset-btn" data-val="16">16mm</button>
               <button class="preset-btn" data-val="24">24mm</button>
+              <button class="preset-btn" data-val="28">28mm</button>
               <button class="preset-btn" data-val="35">35mm</button>
               <button class="preset-btn active" data-val="50">50mm</button>
               <button class="preset-btn" data-val="85">85mm</button>
@@ -111,84 +138,361 @@
           </div>
         </div>
 
-        <!-- Card 3: Results -->
-        <div class="card result-card">
-          <h2 class="card-title"><i class="fa-solid fa-chart-simple"></i> Calculations</h2>
-          
-          <div class="result-display">
-            <div class="result-primary">
-              <div class="result-label" id="result-primary-label">Equivalent 35mm Focal Length</div>
-              <div class="result-value-container">
-                <span class="result-value" id="calc-val-primary">75.0</span>
-                <span class="result-unit">mm</span>
+        <div class="section-divider"></div>
+
+        <!-- Section B: Lens Aperture (f-stop) -->
+        <div class="input-section">
+          <div class="card-header-row">
+            <h2 class="card-title" id="aperture-card-title"><i class="fa-solid fa-camera"></i> Aperture (f-number)</h2>
+            <div class="unit-badge">f-stop</div>
+          </div>
+
+          <div class="input-group">
+            <div class="numeric-input-wrapper">
+              <span class="f-prefix">f/</span>
+              <input type="number" id="aperture-input" min="0.95" max="22" value="1.8" step="0.1" aria-label="Aperture Input" class="with-prefix">
+            </div>
+            
+            <div class="slider-wrapper">
+              <input type="range" id="aperture-slider" min="0.95" max="22" value="1.8" step="0.1" aria-label="Aperture Slider">
+              <div class="slider-ticks">
+                <span>f/1.0</span>
+                <span>f/1.8</span>
+                <span>f/2.8</span>
+                <span>f/4</span>
+                <span>f/5.6</span>
+                <span>f/8</span>
+                <span>f/16</span>
+                <span>f/22</span>
               </div>
             </div>
-            
-            <div class="result-arrow">
-              <i class="fa-solid fa-circle-arrow-right" id="arrow-icon"></i>
-            </div>
-            
-            <div class="result-secondary">
-              <div class="result-label" id="result-secondary-label">Field of View Change</div>
-              <div class="result-statement" id="calc-val-statement">Narrower field of view (Telephoto crop)</div>
-            </div>
           </div>
 
-          <!-- Specs Table -->
-          <div class="specs-grid">
-            <div class="spec-item">
-              <span class="spec-name">Crop Factor Ratio</span>
-              <span class="spec-value">1.5x</span>
-            </div>
-            <div class="spec-item">
-              <span class="spec-name">APS-C Angle of View (Diag)</span>
-              <span class="spec-value" id="spec-apsc-aov">31.7°</span>
-            </div>
-            <div class="spec-item">
-              <span class="spec-name">Full Frame Angle of View (Diag)</span>
-              <span class="spec-value" id="spec-ff-aov">46.8°</span>
-            </div>
-            <div class="spec-item">
-              <span class="spec-name">Standard Classification</span>
-              <span class="spec-value" id="spec-class">Normal Lens</span>
+          <!-- Aperture Presets -->
+          <div class="presets-section">
+            <span class="section-label">Popular Apertures</span>
+            <div class="presets-grid aperture-presets">
+              <button class="preset-btn aperture-btn" data-aperture="1.2">f/1.2</button>
+              <button class="preset-btn aperture-btn" data-aperture="1.4">f/1.4</button>
+              <button class="preset-btn aperture-btn active" data-aperture="1.8">f/1.8</button>
+              <button class="preset-btn aperture-btn" data-aperture="2.0">f/2.0</button>
+              <button class="preset-btn aperture-btn" data-aperture="2.8">f/2.8</button>
+              <button class="preset-btn aperture-btn" data-aperture="4.0">f/4.0</button>
+              <button class="preset-btn aperture-btn" data-aperture="5.6">f/5.6</button>
+              <button class="preset-btn aperture-btn" data-aperture="8.0">f/8.0</button>
+              <button class="preset-btn aperture-btn" data-aperture="11.0">f/11</button>
+              <button class="preset-btn aperture-btn" data-aperture="16.0">f/16</button>
             </div>
           </div>
         </div>
 
-      </section>
-      
+        <div class="section-divider"></div>
+
+        <!-- Section C: Subject Distance (For Exact Depth of Field) -->
+        <div class="input-section">
+          <div class="card-header-row">
+            <h2 class="card-title"><i class="fa-solid fa-arrows-left-right-to-line"></i> Subject Focus Distance</h2>
+            <div class="unit-toggle-group">
+              <button type="button" class="unit-toggle-btn active" id="unit-m">Meters (m)</button>
+              <button type="button" class="unit-toggle-btn" id="unit-ft">Feet (ft)</button>
+            </div>
+          </div>
+
+          <div class="input-group">
+            <div class="numeric-input-wrapper">
+              <input type="number" id="distance-input" min="0.3" max="50" value="2.0" step="0.1" aria-label="Subject Distance Input">
+              <span class="input-unit-overlay" id="distance-unit-label">m</span>
+            </div>
+            
+            <div class="slider-wrapper">
+              <input type="range" id="distance-slider" min="0.3" max="25" value="2.0" step="0.1" aria-label="Subject Distance Slider">
+              <div class="slider-ticks" id="distance-ticks">
+                <span>0.5m</span>
+                <span>1.5m</span>
+                <span>2.5m</span>
+                <span>5m</span>
+                <span>10m</span>
+                <span>25m</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Distance Presets -->
+          <div class="presets-section">
+            <span class="section-label">Shooting Distance Scenarios</span>
+            <div class="presets-grid distance-presets">
+              <button class="preset-btn distance-btn" data-dist="0.6"><i class="fa-solid fa-magnifying-glass"></i> Close-Up</button>
+              <button class="preset-btn distance-btn active" data-dist="1.5"><i class="fa-solid fa-user"></i> Portrait</button>
+              <button class="preset-btn distance-btn" data-dist="2.5"><i class="fa-solid fa-person"></i> Half Body</button>
+              <button class="preset-btn distance-btn" data-dist="4.0"><i class="fa-solid fa-people-arrows"></i> Full Body</button>
+              <button class="preset-btn distance-btn" data-dist="8.0"><i class="fa-solid fa-users"></i> Group / Scene</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Results Card -->
+      <div class="card result-card">
+        <div class="card-header-row">
+          <h2 class="card-title"><i class="fa-solid fa-chart-simple"></i> Optical Equivalence & Depth of Field</h2>
+          <span class="combo-pill" id="calc-combo-tag">50mm f/1.8 ➔ 75mm f/2.7</span>
+        </div>
+        
+        <!-- Dual Primary Results Display -->
+        <div class="result-display-grid">
+          
+          <!-- Equivalent Focal Length -->
+          <div class="result-tile">
+            <div class="result-label" id="result-primary-label">Equivalent 35mm Focal Length</div>
+            <div class="result-value-container">
+              <span class="result-value" id="calc-val-primary">75.0</span>
+              <span class="result-unit">mm</span>
+            </div>
+            <span class="result-tile-sub" id="focal-equiv-sub">Framing / Field of View</span>
+          </div>
+          
+          <!-- Mid Arrow Indicator -->
+          <div class="result-arrow-box">
+            <i class="fa-solid fa-circle-arrow-right" id="arrow-icon"></i>
+          </div>
+
+          <!-- Equivalent Aperture / DoF -->
+          <div class="result-tile highlight-aperture">
+            <div class="result-label" id="result-secondary-label">Equivalent Depth of Field (Aperture)</div>
+            <div class="result-value-container">
+              <span class="result-prefix">f/</span>
+              <span class="result-value" id="calc-val-aperture">2.7</span>
+            </div>
+            <span class="result-tile-sub" id="aperture-equiv-sub">Background Blur & Bokeh</span>
+          </div>
+
+        </div>
+
+        <!-- Equivalence Statement Banner -->
+        <div class="statement-banner">
+          <div class="statement-icon">
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+          </div>
+          <div class="statement-content">
+            <div class="statement-primary" id="calc-val-statement">Behaves like a 75mm f/2.7 lens on Full Frame. (1.5x narrower crop)</div>
+            <div class="statement-exposure-note" id="calc-exposure-note">
+              <i class="fa-solid fa-circle-info"></i> <strong>Exposure Note:</strong> While depth of field equals f/2.7, light transmission per unit area remains f/1.8. Your shutter speed and ISO exposure calculations remain identical to an f/1.8 exposure.
+            </div>
+          </div>
+        </div>
+
+        <!-- Depth of Field Visualizer -->
+        <div class="dof-visualizer-container">
+          <div class="dof-viz-header">
+            <div class="dof-viz-title">
+              <i class="fa-solid fa-eye"></i> Depth of Field (In-Focus Zone) Simulation
+            </div>
+            <div class="dof-total-badge">
+              Total DoF: <strong id="dof-total-val">14.8 cm</strong>
+            </div>
+          </div>
+
+          <!-- Live Visual Bar -->
+          <div class="dof-bar-wrapper">
+            <div class="dof-scene-track">
+              <!-- Out of focus foreground -->
+              <div class="dof-bokeh-region bokeh-foreground" title="Foreground Blur">
+                <span>Foreground Blur</span>
+              </div>
+              
+              <!-- Sharp In-Focus Zone -->
+              <div class="dof-sharp-zone" id="dof-sharp-zone">
+                <div class="dof-zone-glow"></div>
+                <div class="dof-zone-label">SHARP FOCUS ZONE</div>
+                <!-- Subject plane line -->
+                <div class="dof-subject-marker" id="dof-subject-marker" title="Subject Plane">
+                  <div class="marker-pin"><i class="fa-solid fa-crosshairs"></i></div>
+                  <div class="marker-title">Subject</div>
+                </div>
+              </div>
+
+              <!-- Out of focus background -->
+              <div class="dof-bokeh-region bokeh-background" title="Background Bokeh">
+                <span>Background Bokeh</span>
+              </div>
+            </div>
+
+            <!-- Boundary Markers -->
+            <div class="dof-markers-row">
+              <div class="dof-marker-tag near-tag">
+                <span class="tag-label">Near Limit</span>
+                <span class="tag-val" id="dof-near-val">1.93 m</span>
+              </div>
+              <div class="dof-marker-tag focus-tag">
+                <span class="tag-label">Focus Distance</span>
+                <span class="tag-val" id="dof-focus-val">2.00 m</span>
+              </div>
+              <div class="dof-marker-tag far-tag">
+                <span class="tag-label">Far Limit</span>
+                <span class="tag-val" id="dof-far-val">2.08 m</span>
+              </div>
+            </div>
+
+            <!-- Distribution Ratio -->
+            <div class="dof-distribution-bar">
+              <div class="dist-part front" id="dist-front-bar" style="width: 48%;">
+                <span id="dist-front-text">48% In Front</span>
+              </div>
+              <div class="dist-part back" id="dist-back-bar" style="width: 52%;">
+                <span id="dist-back-text">52% Behind</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Comprehensive Specs Grid -->
+        <div class="specs-grid">
+          <div class="spec-item">
+            <span class="spec-name">Sensor Crop Multiplier</span>
+            <span class="spec-value" id="spec-crop">1.50x</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-name">Physical Entrance Pupil</span>
+            <span class="spec-value" id="spec-pupil">27.8 mm</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-name">Total Depth of Field</span>
+            <span class="spec-value highlight-accent" id="spec-total-dof">14.8 cm</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-name">Hyperfocal Distance</span>
+            <span class="spec-value" id="spec-hyperfocal">23.1 m</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-name">Near Sharpness Limit</span>
+            <span class="spec-value" id="spec-near">1.93 m</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-name">Far Sharpness Limit</span>
+            <span class="spec-value" id="spec-far">2.08 m</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-name">Sensor Angle of View (Diag)</span>
+            <span class="spec-value" id="spec-apsc-aov">31.7°</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-name">Full Frame Angle of View</span>
+            <span class="spec-value" id="spec-ff-aov">46.8°</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-name">Standard Classification</span>
+            <span class="spec-value" id="spec-class">Normal Lens</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-name">Circle of Confusion (CoC)</span>
+            <span class="spec-value" id="spec-coc">0.020 mm</span>
+          </div>
+        </div>
+      </div>
+
     </main>
 
-    <!-- Detailed Explanation Section -->
+    <!-- Comprehensive Optical Explanation Section -->
     <section class="explanation-section card">
-      <h2>Understanding Focal Length & Crop Factors</h2>
+      <h2><i class="fa-solid fa-graduation-cap"></i> Mastering Equivalent Depth of Field & Aperture</h2>
+      
       <div class="explanation-grid">
         <div class="explanation-text">
-          <h3>Does the focal length of the lens actually change?</h3>
+          <h3>How to Calculate Equivalent Depth of Field</h3>
           <p>
-            <strong>No.</strong> Focal length is a physical property of a lens (the distance from the optical center of the lens to the sensor when focused at infinity). A 50mm lens is always a 50mm lens, whether it is designed for a Full Frame camera or a crop-sensor (APS-C) camera.
+            To achieve the exact same field of view and depth of field (background blur/bokeh) on a crop sensor camera compared to a standard 35mm Full Frame camera, you must multiply <strong>both</strong> the focal length and the aperture f-number by the crop factor:
           </p>
-          <h3>Why does the crop factor exist?</h3>
+          <div class="formula-callout">
+            <div class="formula-line">
+              <strong>Equivalent Focal Length:</strong> <code>f_FF = f_crop × Crop Factor</code>
+            </div>
+            <div class="formula-line">
+              <strong>Equivalent Aperture (DoF):</strong> <code>N_FF = N_crop × Crop Factor</code>
+            </div>
+          </div>
           <p>
-            An APS-C sensor is physically smaller than a standard 35mm Full Frame sensor. Because the sensor is smaller, it only captures a smaller rectangle out of the middle of the lens's projected image circle. This crops the image, reducing the field of view. The resulting image looks exactly like a longer focal length shot captured on a Full Frame camera.
+            For example, on a 1.5x APS-C camera, an <strong>f/1.8</strong> lens behaves optically with the depth of field of an <strong>f/2.7</strong> lens on Full Frame ($1.8 \times 1.5 = 2.7$).
+          </p>
+
+          <h3>The Physical Optics Reason: Entrance Pupil Diameter</h3>
+          <p>
+            Why does multiplying the aperture by the crop factor produce identical depth of field? Depth of field and background blur at infinity depend directly on the <strong>physical diameter of the lens entrance pupil</strong> ($D = f / N$).
+          </p>
+          <p>
+            Consider a <strong>50mm f/1.8</strong> on APS-C:
+            $$D = \frac{50\text{mm}}{1.8} = 27.8\text{mm}$$
+            Now consider its Full Frame equivalent (<strong>75mm f/2.7</strong>):
+            $$D = \frac{75\text{mm}}{2.7} = 27.8\text{mm}$$
+            Both lenses have the <em>exact same 27.8mm physical aperture diameter</em>. When framed identically from the same distance, the light cones, blur circles, and depth of field are indistinguishable!
           </p>
         </div>
+
         <div class="explanation-text">
-          <h3>The 1.5x Crop Multiplier</h3>
+          <h3>Depth of Field vs. Exposure: The Great Misconception</h3>
           <p>
-            For Sony, Nikon, Fujifilm, Pentax, and Sigma crop-sensor cameras, the conversion factor is approximately <strong>1.5x</strong> (Canon is 1.6x).
+            Photographers often ask: <em>"Does an f/1.8 lens become darker like an f/2.7 lens on APS-C?"</em>
+          </p>
+          <p>
+            <strong>No! Exposure brightness remains unchanged.</strong> F-number is the ratio of focal length to aperture diameter ($f / D$), which dictates the concentration of light per unit area (photons per $\text{mm}^2$).
           </p>
           <ul class="explanation-list">
-            <li><strong>Focal Length Multiplying:</strong> Mounting a 50mm lens on an APS-C body yields the equivalent field of view of a <strong>75mm</strong> lens on a Full Frame body ($50\text{mm} \times 1.5 = 75\text{mm}$).</li>
-            <li><strong>Depth of Field (DoF):</strong> While the focal length equivalence applies to the field of view, the depth of field also changes. An f/2.8 lens on APS-C will yield the equivalent depth of field of an f/4.2 lens on Full Frame ($2.8 \times 1.5 = 4.2$) in terms of background blur, though the light gathering capability per unit area remains f/2.8.</li>
+            <li><strong>For Exposure / Light Intensity:</strong> f/1.8 is always f/1.8 regardless of sensor size. A 1/125s shutter at ISO 100 on an f/1.8 lens yields identical image brightness on APS-C, Full Frame, and Medium Format.</li>
+            <li><strong>For Depth of Field & Bokeh:</strong> The smaller sensor requires shorter focal lengths for the same framing, resulting in a deeper in-focus zone equivalent to $f/1.8 \times 1.5 = \text{f/}2.7$.</li>
+            <li><strong>Total Light Collected:</strong> Because a Full Frame sensor has 2.25x more surface area, it gathers 2.25x more total photons across the entire frame at the same f-number, giving Full Frame roughly a 1.1-stop signal-to-noise advantage.</li>
           </ul>
+
+          <h3>Popular Equivalent Combinations (APS-C 1.5x)</h3>
+          <div class="table-responsive">
+            <table class="equiv-table">
+              <thead>
+                <tr>
+                  <th>Physical APS-C Lens</th>
+                  <th>Full Frame Equivalent Look</th>
+                  <th>Typical Application</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>16mm f/1.4</td>
+                  <td><strong>24mm f/2.1</strong></td>
+                  <td>Wide-angle Astrophotography / Landscapes</td>
+                </tr>
+                <tr>
+                  <td>23mm f/1.4</td>
+                  <td><strong>35mm f/2.1</strong></td>
+                  <td>Environmental Portraits / Street</td>
+                </tr>
+                <tr>
+                  <td>33mm / 35mm f/1.4</td>
+                  <td><strong>50mm f/2.1</strong></td>
+                  <td>Classic "Nifty Fifty" Standard</td>
+                </tr>
+                <tr>
+                  <td>50mm f/1.8</td>
+                  <td><strong>75mm f/2.7</strong></td>
+                  <td>Everyday Portraits & Subject Isolation</td>
+                </tr>
+                <tr>
+                  <td>56mm f/1.4</td>
+                  <td><strong>84mm f/2.1</strong></td>
+                  <td>Classic 85mm Portrait Bokeh</td>
+                </tr>
+                <tr>
+                  <td>70-200mm f/2.8</td>
+                  <td><strong>105-300mm f/4.2</strong></td>
+                  <td>Sports / Wildlife Telephoto Reach</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </section>
 
     <!-- Footer -->
     <footer class="app-footer">
-      <p>© 2026 FocalSense. Designed for photographers and cinematographers.</p>
+      <p>© 2026 FocalSense. Advanced optical equivalence calculator for photographers and cinematographers.</p>
     </footer>
   </div>
 
